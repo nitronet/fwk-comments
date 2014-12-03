@@ -30,7 +30,7 @@ class Comment extends Controller implements Preparable
         }
 
         if (empty($this->form)) {
-            $this->form = $this->getServices()->getProperty('commentsForm');
+            $this->form = $this->getServices()->getProperty('commentForm');
         }
 
         if ($this->getSession()->has(self::SESSION_POST_STATUS)) {

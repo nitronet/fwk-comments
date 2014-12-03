@@ -36,7 +36,7 @@ comments.entities.comment = Nitronet\Fwk\Comments\Model\Comment
 comments.auto.approve = true
 comments.auto.thread = true
 comments.date.format = Y-m-d H:i:s
-comments.form = Nitronet\Comments\Forms\AnonymousCommentForm
+comments.form = Nitronet\Fwk\Comments\Forms\AnonymousCommentForm
 ```
 
 index.php:

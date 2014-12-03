@@ -1,0 +1,22 @@
+{
+    "name": "nitronet/fwk-comments",
+    "license": "BSD",
+    "authors": [
+        {
+            "name": "neiluJ",
+            "email": "julien@nitronet.org"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=5.3.0",
+        "fwk/core": "dev-master",
+        "fwk/db": "dev-master",
+        "fwk/form": "dev-master"
+    },
+    "autoload": {
+        "psr-0": {
+            "Nitronet": "src"
+        }
+    }
+}

@@ -71,13 +71,6 @@ You can now use the embed viewHelper in your templates, like so:
 <?= $this->_helper->embed('CommentsCount', array('id' => 'blog:'. $article->getId())); ?>
 ```
 
-Or if you use [Twig](https://github.com/nitronet/fwk-twig):
-``` django
-{% for asset in _helper.asset(['/path/to/site.css'], [], 'site', true) %}
-    <link href="{{ asset }}" media="all" rel="stylesheet" type="text/css" />
-{% endfor %}
-```
-
 ## Contributions / Community
 
 - Issues on Github: https://github.com/nitronet/fwk-comments/issues

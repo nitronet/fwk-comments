@@ -11,6 +11,7 @@
     "require": {
         "php": ">=5.3.0",
         "fwk/core": "dev-master",
+        "fwk/di": "dev-master",
         "fwk/db": "dev-master",
         "fwk/form": "dev-master"
     },

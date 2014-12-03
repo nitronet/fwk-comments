@@ -30,7 +30,7 @@ class Comment extends Controller implements Preparable
         }
 
         if (empty($this->form)) {
-            $this->form = $this->getServices()->getProperty('comments.form.default');
+            $this->form = $this->getServices()->getProperty('commentsForm');
         }
 
         if ($this->getSession()->has(self::SESSION_POST_STATUS)) {
@@ -115,7 +115,7 @@ class Comment extends Controller implements Preparable
      */
     protected function getSession()
     {
-        return $this->getServices()->get($this->getServices()->getProperty('comments.session.service'));
+        return $this->getServices()->get($this->getServices()->getProperty('sessionServiceName'));
     }
 
     /**
@@ -139,7 +139,7 @@ class Comment extends Controller implements Preparable
      */
     protected function getService()
     {
-        return $this->getServices()->get($this->getServices()->getProperty('comments.service'));
+        return $this->getServices()->get($this->getServices()->getProperty('commentsServiceName'));
     }
 
     /**
@@ -148,7 +148,7 @@ class Comment extends Controller implements Preparable
     public function getRenderer()
     {
         if (!isset($this->renderer)) {
-            $prop = $this->getServices()->getProperty('comments.form.renderer.service');
+            $prop = $this->getServices()->getProperty('rendererServiceName');
             if (empty($prop)) {
                 $this->renderer = new Renderer();
             } else {

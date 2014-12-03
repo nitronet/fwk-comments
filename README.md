@@ -1,6 +1,6 @@
-# fwk-assetic
+# fwk-comments
 
-Adds [Assetic](https://github.com/kriswallsmith/assetic) to [Fwk\Core](https://github.com/fwk/Core) Applications.
+Adds Comments management to [Fwk\Core](https://github.com/fwk/Core) Applications.
 
 ## Installation
 
@@ -11,94 +11,64 @@ Via [Composer](http://getcomposer.org):
 ```
 {
     "require": {
-        "nitronet/fwk-assetic": "dev-master",
+        "nitronet/fwk-comments": "dev-master",
     }
 }
 ```
 
-If you don't use Composer, you can still [download](https://github.com/nitronet/fwk-assetic/zipball/master) this repository and add it
+If you don't use Composer, you can still [download](https://github.com/nitronet/fwk-comments/zipball/master) this repository and add it
 to your ```include_path``` [PSR-0 compatible](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md)
 
-### 2: Configure Assetic as a Service
+### 2: Configure Plugin
 
-Configures Assetic classes in your [Di](https://github.com/fwk/Di) Container, and tweak it the way you want. To make it customizable,
-we'll also use some INI properties:
+First, add some INI configuration to your config.ini file
 
 ``` ini
 [services]
-; :packageDir is the directory where your service.xml is.
-assetic.assets.directory = :packageDir/MyApp/templates/assets
-assetic.debug = true
-assetic.action.name = Asset
+comments.service = comments
+comments.services.database = db
+comments.services.session = session
+comments.services.renderer = formRenderer
+comments.tables.threads = comments_threads
+comments.tables.comments = comments
+comments.entities.thread = Nitronet\Fwk\Comments\Model\Thread
+comments.entities.comment = Nitronet\Fwk\Comments\Model\Comment
+comments.auto.approve = true
+comments.auto.thread = true
+comments.date.format = Y-m-d H:i:s
+comments.form = Nitronet\Comments\Forms\AnonymousCommentForm
 ```
 
-services.xml:
-``` xml
-<!-- Assetic AssetFactory -->
-<class-definition name="assetic.AssetFactory" class="Assetic\Factory\AssetFactory" shared="true">
-    <argument>:assetic.assets.directory</argument>
-    <argument>:assetic.debug</argument>
-    <call method="setFilterManager">
-        <argument>@assetic.FilterManager</argument>
-    </call>
-</class-definition>
-
-<!-- Assetic FilterManager -->
-<class-definition name="assetic.FilterManager" class="Assetic\FilterManager" shared="true" />
-
-<!-- Fwk Service -->
-<class-definition name="assetic" class="FwkAssetic\AssetsService" shared="true">
-    <argument>@assetic.AssetFactory</argument>
-</class-definition>
-
-<!-- Fwk ViewHelper -->
-<class-definition name="_vh.AsseticViewHelper" class="FwkAssetic\AssetViewHelper" shared="true">
-    <argument desc="Name of the Fwk Service">assetic</argument>
-    <argument desc="Name of your Url ViewHelper">url</argument>
-    <argument desc="Enable Assetic debugging">:assetic.debug</argument>
-    <argument desc="Asset action name">:assetic.action.name</argument>
-</class-definition>
-```
-
-Next, you want to add the ViewHelper to your ViewHelperService:
-``` xml
-<!-- You probably already have this one -->
-<class-definition name="viewHelper" class="Fwk\Core\Components\ViewHelper\ViewHelperService" shared="true">
-    <!-- ... -->
-    <call method="add">
-        <argument desc="Name of the helper (to be used in templates)">asset</argument>
-        <argument desc="Instance of the AsseticViewHelper">@_vh.AsseticViewHelper</argument>
-    </call>
-</class-definition>
+index.php:
+``` php
+$app->plugin(new CommentsPlugin(array(
+    'db'            => $services->getProperty('comments.services.database', 'db'),
+    'sessionService'    => $services->getProperty('comments.services.session', 'session'),
+    'rendererService'   => $services->getProperty('comments.services.renderer', 'formRenderer'),
+    'threadsTable'  => $services->getProperty('comments.tables.threads', 'comments_threads'),
+    'threadEntity'  => $services->getProperty('comments.entities.thread', 'Nitronet\Fwk\Comments\Model\Thread'),
+    'commentsTable' => $services->getProperty('comments.tables.comments', 'comments'),
+    'commentEntity' => $services->getProperty('comments.entities.comment', 'Nitronet\Fwk\Comments\Model\Comment'),
+    'commentForm'   => $services->getProperty('comments.form', 'Nitronet\Fwk\Comments\Forms\AnonymousCommentForm'),
+    'autoThread'    => $services->getProperty('comments.auto.thread', false),
+    'autoApprove'   => $services->getProperty('comments.auto.approve', true),
+    'dateFormat'    => $services->getProperty('comments.date.format', 'Y-m-d H:i:s'),
+    'serviceName'   => $services->getProperty('comments.service', 'comments')
+)));
 ``` 
-
-### 3: Register action and routes to the Asset Action
-
-fwk.xml:
-
-``` xml
-<action name="Asset" shortcut="FwkAssetic\Controllers\AssetAction:show" />
-```
-
-If you use the UrlRewriterService, you can also customize the action route:
-
-``` xml 
-<url-rewrite>
-    <!-- ... --->
-    <url route="/asset/:asset" action="Asset">
-        <param name="asset" regex=".*" />
-    </url>
-</url-rewrite>
-```
 
 ### 4: That's it!
 
-You can now use the viewHelper in your templates, like so:
+You can now use the embed viewHelper in your templates, like so:
 
+#### Displaying thread
 ``` php
-<?php foreach($this->_helper->asset(array('/path/to/site.css'), $filters = array(), $output = "site") as $asset): ?>
-    <link href="<?php echo $asset; ?>" media="all" rel="stylesheet" type="text/css" />
-<?php endforeach; ?>
+<?= $this->_helper->embed('CommentsThread', array('id' => 'blog:'. $article->getId(), type: 'threaded')); ?>
+```
+
+#### Displaying Comments count
+``` php
+<?= $this->_helper->embed('CommentsCount', array('id' => 'blog:'. $article->getId())); ?>
 ```
 
 Or if you use [Twig](https://github.com/nitronet/fwk-twig):
@@ -108,193 +78,7 @@ Or if you use [Twig](https://github.com/nitronet/fwk-twig):
 {% endfor %}
 ```
 
-## CssRewrite
-
-To display images and resources referenced in your CSS, you'll have to use a "rewrite" filter. 
-
-Back to your services.xml, declare the filter definition and change your ```assetic.FilterManager``` definition to this:
-``` xml
-<!-- Assetic FilterManager -->
-<class-definition name="assetic.FilterManager" class="Assetic\FilterManager" shared="true">
-    <call method="set">
-        <argument desc="Filter alias">cssrewrite</argument>
-        <argument desc="Filter instance">@assetic.CssRewriteFilter</argument>
-    </call>
-</class-definition>
-
-<!-- CssRewriteFilter -->
-<class-definition name="assetic.CssRewriteFilter" class="FwkAssetic\Filters\CssRewriteFilter" shared="true">
-    <argument>@_vh.AsseticViewHelper</argument>
-</class-definition>
-```
-
-Now, just call the *cssrewrite* filter in your templates:
-``` php 
-<?php foreach($this->_helper->asset('/path/to/site.css', 'cssrewrite') as $asset): ?>
-    <link href="<?php echo $asset; ?>" media="all" rel="stylesheet" type="text/css" />
-<?php endforeach; ?>
-```
-
-That's it!
-
-## Configure Caching
-
-To prevent 404 errors on assets urls, you'll have to use the Assetic caching mechanism, which require some more configuration...
-
-### 1: Configuration variables and caching directory
-
-Create a directory where Assetic can cache the assets:
-``` sh
-$ mkdir /path/to/app/cache 
-$ chmod 777 /path/to/app/cache
-```
-
-Configure the application:
-``` ini
-assetic.use.cache = true
-assetic.cache.directory = /path/to/app/cache
-; could be content or modification 
-assetic.cache.strategy = content
-```
-
-### 2: Configure Services
-
-Adds the following definitions to your services.xml
-``` xml
-<!-- Assetic FilesystemCache -->
-<class-definition name="assetic.FilesystemCache" class="Assetic\Cache\FilesystemCache" shared="true">
-    <argument>:assetic.cache.directory</argument>
-</class-definition>
-<!-- Assetic CacheBustingWorker -->
-<class-definition name="assetic.CacheBustingWorker" class="Assetic\Factory\Worker\CacheBustingWorker" shared="true">
-    <argument>:assetic.cache.strategy</argument>
-</class-definition>
-```
-
-And reconfigure previous definitions:
-``` xml
-<!-- Assetic AssetFactory -->
-<class-definition name="assetic.AssetFactory" class="Assetic\Factory\AssetFactory" shared="true">
-    <argument>:assetic.assets.directory</argument>
-    <argument>:assetic.debug</argument>
-    <call method="setFilterManager">
-        <argument>@assetic.FilterManager</argument>
-    </call>
-    <!-- enable assetic cache -->
-    <call method="addWorker">
-        <argument>@assetic.CacheBustingWorker</argument>
-    </call>
-</class-definition>
-
-<!-- Fwk Service -->
-<class-definition name="assetic" class="FwkAssetic\AssetsService" shared="true">
-    <argument>@assetic.AssetFactory</argument>
-    <!-- enable assetic cache -->
-    <argument>@assetic.FilesystemCache</argument>
-</class-definition>
-```
-
-### 3: You're done!
-
-Now you can refresh your pages and admire your frontend skills ;)
-
-
-## Shortcuts to Assets
-
-Sometimes it can be useful to define shortcuts to assets directories if they are not in your ```:assetic.assets.directory```. 
-
-### 1: Create an array of shortcuts
-
-``` xml
-<!-- Assets shortcuts -->
-<array-definition name="assetic.Shortcuts">
-    <param key="bower">:packageDir/../public/bower_components</param>
-    <param key="theme">:packageDir/templates/assets</param>
-</array-definition>
-```
-
-### 2: Add a method call to your AssetsService
-
-``` xml
-<!-- Assets Service -->
-<class-definition name="assetic" class="FwkAssetic\AssetsService" shared="true">
-    <argument>@assetic.AssetFactory</argument>
-    <argument>@assetic.FilesystemCache</argument>
-    <!-- add shortcuts -->
-    <call method="addShortcuts">
-        <argument>@assetic.Shortcuts</argument>
-    </call>
-</class-definition>
-```
-
-### 3: Use your shortcuts
-
-Now that shortcuts have been defined, we can call our assets easily:
-
-``` php
-<?php foreach($this->_helper->asset(array('+bower/bootstrap/css/bootstrap.css')) as $asset): ?>
-    <link href="<?php echo $asset; ?>" media="all" rel="stylesheet" type="text/css" />
-<?php endforeach; ?>
-```
-
-## Full XML configuration
-
-``` xml
-<!--
-    ASSETIC (fwk-assetic)
--->
-<class-definition name="assetic.CssRewriteFilter" class="FwkAssetic\Filters\CssRewriteFilter" shared="true">
-    <argument>@_vh.AsseticViewHelper</argument>
-</class-definition>
-<class-definition name="assetic.FilterManager" class="Assetic\FilterManager" shared="true">
-    <call method="set">
-        <argument>cssrewrite</argument>
-        <argument>@assetic.CssRewriteFilter</argument>
-    </call>
-</class-definition>
-<class-definition name="assetic.FilesystemCache" class="Assetic\Cache\FilesystemCache" shared="true">
-    <argument>:assetic.cache.directory</argument>
-</class-definition>
-<class-definition name="assetic.CacheBustingWorker" class="Assetic\Factory\Worker\CacheBustingWorker" shared="true">
-    <argument>:assetic.cache.strategy</argument>
-</class-definition>
-<class-definition name="assetic.AssetFactory" class="Assetic\Factory\AssetFactory" shared="true">
-    <argument>:assetic.assets.directory</argument>
-    <argument>:assetic.debug</argument>
-    <call method="setFilterManager">
-        <argument>@assetic.FilterManager</argument>
-    </call>
-    <!-- enable assetic cache -->
-    <call method="addWorker">
-        <argument>@assetic.CacheBustingWorker</argument>
-    </call>
-</class-definition>
-
-<!-- Assets Service -->
-<class-definition name="assetic" class="FwkAssetic\AssetsService" shared="true">
-    <argument>@assetic.AssetFactory</argument>
-    <argument>@assetic.FilesystemCache</argument>
-    <!-- add shortcuts -->
-    <call method="addShortcuts">
-        <argument>@assetic.Shortcuts</argument>
-    </call>
-</class-definition>
-
-<class-definition name="_vh.AsseticViewHelper" class="\FwkAssetic\AssetViewHelper" shared="true">
-    <argument>assetic</argument>
-    <argument>url</argument>
-    <argument>:assetic.debug</argument>
-    <argument>:assetic.action.name</argument>
-</class-definition>
-
-<!-- Assets shortcuts -->
-<array-definition name="assetic.Shortcuts">
-    <param key="bower">:packageDir/../public/bower_components</param>
-    <param key="theme">:packageDir/templates/assets</param>
-</array-definition>
-```
-
 ## Contributions / Community
 
-- Issues on Github: https://github.com/nitronet/fwk-assetic/issues
+- Issues on Github: https://github.com/nitronet/fwk-comments/issues
 - Follow *Fwk* on Twitter: [@phpfwk](https://twitter.com/phpfwk)
